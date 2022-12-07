@@ -7,15 +7,14 @@ host = '127.0.0.1'
 port = 55555
 
 # SSL Context
-#context = ssl.create_default_context(purpose = ssl.Purpose.CLIENT_AUTH)
-#context.check_hostname = False
-#context.verify_mode = ssl.CERT_NONE
-#print(context.protocol)
-#print(context.get_ciphers())
+
+context = ssl.SSLContext(ssl.PROTOCOL_TLS_SERVER)
+context.load_cert_chain(certfile='.ssh/cert.pem', keyfile='.ssh/key.pem')
+context.verify_mode = ssl.CERT_NONE
 
 # Starting Server
 server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-#server = context.wrap_socket(server, server_side = True)
+server = context.wrap_socket(server, server_side = True)
 server.bind((host, port))
 server.listen()
 
@@ -57,7 +56,7 @@ def receive():
         # Request And Store Nickname
         client.send('NICK'.encode('ascii'))
         nickname = client.recv(1024).decode('ascii')
-        n6icknames.append(nickname)
+        nicknames.append(nickname)
         clients.append(client)
 
         # Print And Broadcast Nickname
