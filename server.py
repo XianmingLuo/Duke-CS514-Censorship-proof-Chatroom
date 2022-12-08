@@ -7,6 +7,8 @@ class Client:
         self.socket = socket
         self.address = address
         self.nickname = None
+        self.keyServer = None
+        self.publicKey = None
     def sendChatMessage(self, chatMessage):
         messageBytes = chatMessage.to_bytes()
         self.socket.send(messageBytes)
@@ -19,11 +21,31 @@ class Client:
         response = self.recvChatMessage()
         assert(response.command == 'NICK' and response.isEncrypted == False)
         self.nickname = response.payload.decode('ascii')
-
+    def connectKeyServer(self):
+        # TODO: Not using TLS for now
+        self.keyServer = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        self.keyServer.connect((self.address[0], self.address[1]+1))
+    def requestEncryptedSymmetricKey(self, requester_pk: bytes):
+        self.keyServer.send(requester_pk)
+        encryptedKey = self.keyServer.recv(1024)
+        return encryptedKey
+    def requestPublicKey(self):
+        request = ChatMessage('KEY', False, None)
+        self.socket.send(request.to_bytes())
+        response = ChatMessage.from_bytes(self.socket.recv(1024))
+        self.publicKey = response.payload
+        print("Public Key is {}".format(self.publicKey))
+        return self.publicKey
+    def appointRoomMaster(self):
+        leaderAppointment = ChatMessage('MASTER', False, None)
+        self.sendChatMessage(leaderAppointment)
+        self.connectKeyServer()
     def getNickname(self,):
         return self.nickname
     def quit(self,):
         self.socket.close()
+        if self.keyServer:
+            self.keyServer.close()
         
 class Chatroom:
     def __init__(self, host, port):
@@ -51,16 +73,22 @@ class Chatroom:
     def handshake(self, client):
         client.fetchNickname()
         if not self.roomMaster:
+            # Inform the client its room master identity
+            # So that it will generate a symmetric key to distribute
+            client.appointRoomMaster()
             self.roomMaster = client
+
+            # TODO: do we need to ack master appointment?
             print("Room Master is {}".format(self.roomMaster.getNickname()))
         else:
-            #No handshake fornow
-            #client.recv(client_public_key)
-            #client_pk.append(client_public_key) thread-safe
-            #roomMaster.send(client_public_key)
-            #roomMaster.recv(encrypted_symmetric_chatroom_key)
-            #client.send(encrypted_symmetric_chatroom_key)
-            pass
+            # Request public key from the new client
+            publicKey = client.requestPublicKey()
+            # Get Encrypted Symmetric key 
+            encryptedKey = self.roomMaster.requestEncryptedSymmetricKey(publicKey)
+            print("[RoomMaster] Key is {}".format(encryptedKey))
+            response = ChatMessage('DISTRIBUTE', 'False', encryptedKey)
+            # send the encrypted symmetric key to the new participant
+            client.sendChatMessage(response)
         self.clients.append(client)
         self.broadcastNotification("{} joined!".format(client.getNickname()))
         self.unicastNotification(client, 'Connected to server!')
@@ -72,6 +100,7 @@ class Chatroom:
             try:
                 # Broadcasting Messages
                 chatMessage = client.recvChatMessage()
+                print(chatMessage.payload.decode('ascii'))
                 self.broadcast(chatMessage)
             except:
                 # Removing And Closing Clients
@@ -81,11 +110,15 @@ class Chatroom:
                 if client == self.roomMaster:
                     if len(self.clients) > 0:
                         # Randomly assign a new room master for now
+                        # Appoint a new Room Master
+                        # TODO: Lock needed?
+                        self.clients[0].appointRoomMaster()
                         self.roomMaster = self.clients[0]
+                        # TODO: Ack needed?
                         self.broadcastNotification('{} is the new room master!'.format(self.roomMaster.getNickname()))
                     else:
+                        # No clients left
                         self.roomMaster = None
-
                 break
     def broadcast(self, chatMessage):
         for client in self.clients:
