@@ -62,17 +62,9 @@ class Chatroom:
             #client.send(encrypted_symmetric_chatroom_key)
             pass
         self.clients.append(client)
-        self.broadcast(ChatMessage(None, False,
-                                   "{} joined!"
-                                   .format(client.getNickname())
-                                   .encode('ascii')))
-        client.sendChatMessage(ChatMessage(None, False,
-                                           'Connected to server!'
-                                           .encode('ascii')))
-        client.sendChatMessage(ChatMessage(None, False,
-                                           'Room Master is {}.'
-                                           .format(self.roomMaster.getNickname())
-                                           .encode('ascii')))
+        self.broadcastNotification("{} joined!".format(client.getNickname()))
+        self.unicastNotification(client, 'Connected to server!')
+        self.unicastNotification(client, 'Room Master is {}.'.format(self.roomMaster.getNickname()))
         handleThread = threading.Thread(target=self.handle, args=(client,))
         handleThread.start()
     def handle(self, client):
@@ -85,25 +77,25 @@ class Chatroom:
                 # Removing And Closing Clients
                 self.clients.remove(client)
                 client.quit()
-                self.broadcast(ChatMessage(None, False,
-                                           '{} left!'
-                                           .format(client.getNickname())
-                                           .encode('ascii')))
+                self.broadcastNotification('{} left!'.format(client.getNickname()))
                 if client == self.roomMaster:
                     if len(self.clients) > 0:
                         # Randomly assign a new room master for now
                         self.roomMaster = self.clients[0]
-                        self.broadcast(ChatMessage(None, False,
-                                                   '{} is the new room master!'
-                                                   .format(self.roomMaster.getNickname()).encode('ascii')))
+                        self.broadcastNotification('{} is the new room master!'.format(self.roomMaster.getNickname()))
                     else:
                         self.roomMaster = None
 
                 break
     def broadcast(self, chatMessage):
-        print()
         for client in self.clients:
             client.sendChatMessage(chatMessage)
+    def broadcastNotification(self, notification: str):
+        chatMessage = ChatMessage(None, False, notification.encode('ascii'))
+        self.broadcast(chatMessage)
+    def unicastNotification(self, client, notification: str):
+        chatMessage = ChatMessage(None, False, notification.encode('ascii'))
+        client.sendChatMessage(chatMessage)
 if __name__ == '__main__':
     chatroom = Chatroom(host='127.0.0.1',port=55555)
     chatroom.start()

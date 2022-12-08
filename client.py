@@ -44,13 +44,13 @@ def receive():
             elif command == 'MASTER':
                 print("I am the master..?")
                 # Generate Symmetric Chatroom key
-            else:
+            else :
                 if (chatMessage.isEncrypted):
                     print("ciphertext:", chatMessage.payload.decode('ascii'))
                     # Decrypt Chatroom Message using Symmetric Chatroom key
                     print("plaintext:", f.decrypt(chatMessage.payload).decode('ascii'))
                 else:
-                    print(chatMessage.payload.decode('ascii'))
+                    print("Notification:", chatMessage.payload.decode('ascii'))
         except Exception as e:
             # Close Connection When Error
             print("An error occured!", e)
