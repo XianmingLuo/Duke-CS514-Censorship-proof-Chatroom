@@ -1,20 +1,25 @@
 import socket
 import ssl
 import threading
-
+from ChatMessage import ChatMessage
 class Client:
     def __init__(self, socket, address):
         self.socket = socket
         self.address = address
         self.nickname = None
-    def send(self, message):
-        self.socket.send(message.encode('ascii'))
-    def recv(self,):
-        message = self.socket.recv()
-        return message.decode('ascii')
+    def sendChatMessage(self, chatMessage):
+        messageBytes = chatMessage.to_bytes()
+        self.socket.send(messageBytes)
+    def recvChatMessage(self):
+        messageBytes = self.socket.recv(1024)
+        return ChatMessage.from_bytes(messageBytes)
     def fetchNickname(self,):
-        self.send('NICK')
-        self.nickname = self.recv()
+        request = ChatMessage('NICK', False, None)
+        self.sendChatMessage(request)
+        response = self.recvChatMessage()
+        assert(response.command == 'NICK' and response.isEncrypted == False)
+        self.nickname = response.payload.decode('ascii')
+
     def getNickname(self,):
         return self.nickname
     def quit(self,):
@@ -57,35 +62,48 @@ class Chatroom:
             #client.send(encrypted_symmetric_chatroom_key)
             pass
         self.clients.append(client)
-        self.broadcast("{} joined!".format(client.getNickname()))
-        client.send('Connected to server!')
-        client.send('Room Master is {}.'.format(self.roomMaster.getNickname()))
+        self.broadcast(ChatMessage(None, False,
+                                   "{} joined!"
+                                   .format(client.getNickname())
+                                   .encode('ascii')))
+        client.sendChatMessage(ChatMessage(None, False,
+                                           'Connected to server!'
+                                           .encode('ascii')))
+        client.sendChatMessage(ChatMessage(None, False,
+                                           'Room Master is {}.'
+                                           .format(self.roomMaster.getNickname())
+                                           .encode('ascii')))
         handleThread = threading.Thread(target=self.handle, args=(client,))
         handleThread.start()
     def handle(self, client):
         while True:
             try:
                 # Broadcasting Messages
-                message = client.recv()
-                self.broadcast(message)
+                chatMessage = client.recvChatMessage()
+                self.broadcast(chatMessage)
             except:
                 # Removing And Closing Clients
                 self.clients.remove(client)
                 client.quit()
-                self.broadcast('{} left!'.format(client.getNickname()))
+                self.broadcast(ChatMessage(None, False,
+                                           '{} left!'
+                                           .format(client.getNickname())
+                                           .encode('ascii')))
                 if client == self.roomMaster:
                     if len(self.clients) > 0:
                         # Randomly assign a new room master for now
                         self.roomMaster = self.clients[0]
-                        self.broadcast('{} is the new room master!'.format(self.roomMaster.getNickname()))
+                        self.broadcast(ChatMessage(None, False,
+                                                   '{} is the new room master!'
+                                                   .format(self.roomMaster.getNickname()).encode('ascii')))
                     else:
                         self.roomMaster = None
 
                 break
-    def broadcast(self, message):
-        print(message)
+    def broadcast(self, chatMessage):
+        print()
         for client in self.clients:
-            client.send(message)
+            client.sendChatMessage(chatMessage)
 if __name__ == '__main__':
     chatroom = Chatroom(host='127.0.0.1',port=55555)
     chatroom.start()
