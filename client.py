@@ -18,8 +18,6 @@ client = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 client = context.wrap_socket(client)
 client.connect(('127.0.0.1', 55555))
 
-#print(client.version())
-#print(client.cipher())
 
 # Listening to Server and Sending Nickname
 def receive():

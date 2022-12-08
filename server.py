@@ -50,8 +50,6 @@ def receive():
         # Accept Connection
         client, address = server.accept()
         print("Connected with {}".format(str(address)))
-        #print(client.version())
-        #print(client.cipher())
 
         # Request And Store Nickname
         client.send('NICK'.encode('ascii'))
