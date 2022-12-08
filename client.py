@@ -28,7 +28,17 @@ def receive():
             message = client.recv(1024).decode('ascii')
             if message == 'NICK':
                 client.send(nickname.encode('ascii'))
+            elif message == 'KEY':
+                # Generate Asymmetric Key pair for end-to-end key exchange
+                #client.send(public_key)
+                #client.recv(encrypted_symmetric chatroom key)
+                #store the key
+                pass
+            elif message == 'MASTER':
+                print("I am the master..?")
+                # Generate Symmetric Chatroom key
             else:
+                # Decrypt Chatroom Message using Symmetric Chatroom key
                 print(message)
         except:
             # Close Connection When Error
@@ -40,9 +50,13 @@ def receive():
 def write():
     while True:
         message = '{}: {}'.format(nickname, input(''))
-        client.send(message.encode('ascii'))
-
-
+        # Encrypt message using symmetric chatroom key
+        try:
+            client.send(message.encode('ascii'))
+        except Exception as e:
+            print("An error occured!")
+            client.close()
+            break
 # Starting Threads For Listening And Writing
 receive_thread = threading.Thread(target=receive)
 receive_thread.start()
