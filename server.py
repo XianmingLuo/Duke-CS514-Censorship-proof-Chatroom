@@ -73,6 +73,14 @@ class Chatroom:
                 self.clients.remove(client)
                 client.quit()
                 self.broadcast('{} left!'.format(client.getNickname()))
+                if client == self.roomMaster:
+                    if len(self.clients) > 0:
+                        # Randomly assign a new room master for now
+                        self.roomMaster = self.clients[0]
+                        self.broadcast('{} is the new room master!'.format(self.roomMaster.getNickname()))
+                    else:
+                        self.roomMaster = None
+
                 break
     def broadcast(self, message):
         print(message)
