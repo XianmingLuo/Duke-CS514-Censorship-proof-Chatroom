@@ -36,13 +36,12 @@ f = None
 
 # Dedicated thread and socket to distribute the key
 def distribute(key):
-    print("[KeyServer] Waiting for Connection...")
+    #print("[KeyServer] Waiting for Connection...")
     keyClient, address = keyServer.accept()
-    print("[KeyServer] Connected with {}".format(str(address)))
+    #print("[KeyServer] Connected with {}".format(str(address)))
     while True:
         messageBytes = keyClient.recv(1024)
-        print("[KeyServer] Recieved Message {}".format(messageBytes))
-        # TODO: Encrypt the symmetric key with requester's public key
+        #print("[KeyServer] Recieved Message {}".format(messageBytes))
         requester_pk = serialization.load_pem_public_key(
             messageBytes,
             backend=default_backend()
@@ -56,7 +55,7 @@ def distribute(key):
             )
         )
         keyClient.send(encryptedKey)
-        print("[KeyServer] Sent Key {}".format(encryptedKey))
+        #print("[KeyServer] Sent Key {}".format(encryptedKey))
 
         
         
@@ -71,8 +70,6 @@ def receive():
             messageBytes = client.recv(1024)
             chatMessage = ChatMessage.from_bytes(messageBytes)
             command = chatMessage.command
-            print(command)
-            print(chatMessage.payload)
             if command == 'NICK':
                 response = ChatMessage('NICK',
                                        False,
@@ -91,7 +88,7 @@ def receive():
                     encoding=serialization.Encoding.PEM,
                     format=serialization.PublicFormat.SubjectPublicKeyInfo
                 )
-                print("[Handshake] Public Key To Transmit {}".format(public_bytes))
+                #print("[Handshake] Public Key To Transmit {}".format(public_bytes))
                 response = ChatMessage('KEY',
                                        False,
                                        public_bytes)
@@ -127,18 +124,18 @@ def receive():
                     )
                 )
                 f = Fernet(key)
-                print("[DEBUG]: Key recieved")
-                print(key.decode('ascii'))
+                #print("[DEBUG]: Key recieved")
+                #print(key.decode('ascii'))
                 write_thread = threading.Thread(target=write)
                 write_thread.start()
 
             else:
                 if (chatMessage.isEncrypted):
-                    print("ciphertext:", chatMessage.payload.decode('ascii'))
+                    #print("ciphertext:", chatMessage.payload.decode('ascii'))
                     # Decrypt Chatroom Message using Symmetric Chatroom key
-                    print("plaintext:", f.decrypt(chatMessage.payload).decode('ascii'))
+                    print("[Message]", f.decrypt(chatMessage.payload).decode('ascii'))
                 else:
-                    print("Notification:", chatMessage.payload.decode('ascii'))
+                    print("[Notification]", chatMessage.payload.decode('ascii'))
         except Exception as e:
             # Close Connection When Error
             print("An error occured!", e)

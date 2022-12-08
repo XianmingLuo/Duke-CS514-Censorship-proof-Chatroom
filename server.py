@@ -34,7 +34,7 @@ class Client:
         self.socket.send(request.to_bytes())
         response = ChatMessage.from_bytes(self.socket.recv(1024))
         self.publicKey = response.payload
-        print("Public Key is {}".format(self.publicKey))
+        print("[Key Exchange]", "Public Key is {}".format(self.publicKey))
         return self.publicKey
     def appointRoomMaster(self):
         leaderAppointment = ChatMessage('MASTER', False, None)
@@ -66,7 +66,7 @@ class Chatroom:
         # Accept Connection
             socket, address = self.server.accept()
             client = Client(socket, address)
-            print("Connected with {}".format(str(address))) 
+            print("[Server]", "Connected with {}".format(str(address))) 
             # Start Handling Thread For Client
             handshakeThread = threading.Thread(target=self.handshake, args=(client,))
             handshakeThread.start()
@@ -79,7 +79,7 @@ class Chatroom:
             self.roomMaster = client
 
             # TODO: do we need to ack master appointment?
-            print("Room Master is {}".format(self.roomMaster.getNickname()))
+            print("[Room Master]","Room Master is {}".format(self.roomMaster.getNickname()))
         else:
             # Request public key from the new client
             publicKey = client.requestPublicKey()
@@ -100,7 +100,7 @@ class Chatroom:
             try:
                 # Broadcasting Messages
                 chatMessage = client.recvChatMessage()
-                print(chatMessage.payload.decode('ascii'))
+                print("[ChatMessage]", chatMessage.payload.decode('ascii'))
                 self.broadcast(chatMessage)
             except:
                 # Removing And Closing Clients
