@@ -12,11 +12,12 @@ Installation:
 
 For server:
 -----------
-    python server.py
+    python3 server.py
 
 For clients:
 -----------
-    python client.py
+    python3 client.py
     
 Note:
 -----
+Currently we are using loopback ip address, meaning the server's address is 127.0.0.1:55555 and the client's address is 127.0.0.1:random_port. Because of that, client and server have to be on the same machine for now. However, it is quite easy to use public ip addresses.
