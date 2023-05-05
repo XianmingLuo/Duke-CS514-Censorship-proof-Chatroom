@@ -8,7 +8,7 @@ This is a chat server that uses end-to-end encryption for communication. The ser
 
 Installation:
 -------------
-    git clone https://github.com/szt1112/CS514-Final-Project.git
+    git clone https://github.com/XianmingLuo/Duke-CS514-Censorship-proof-Chatroom.git
 
 For server:
 -----------
